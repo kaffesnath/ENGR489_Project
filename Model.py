@@ -29,9 +29,6 @@ def evaluate(x):
     # Evaluate model
     return model.score(x, y)
 
-def RandomForestClassifier():
-    return 0.5
-
 toolbox = base.Toolbox()
 
 #define pset
@@ -57,7 +54,7 @@ toolbox.register("select", tools.selTournament, tournsize=5)
 toolbox.register("evaluate", evaluate)
 
 def main():
-    random.seed(318)
+    random.seed(999)
     pop = toolbox.population(n=300)
     hof = tools.HallOfFame(1)
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
