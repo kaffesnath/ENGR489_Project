@@ -15,21 +15,19 @@ def print_features():
 def get_features():
     features = []
     for index, row in data.iterrows():
-        wordCount = 0
-        averageTfidf = 0
         description = row['tweet_content']
         words = description.split()
+        wordValues = []
         for word in words:
             if word in tfidf.get_feature_names_out():
-                wordCount += 1
-                averageTfidf += tfidf.idf_[tfidf.vocabulary_[word]]
-        if wordCount != 0:
-            averageTfidf /= wordCount
-        row = [row['sentiment'], wordCount, averageTfidf]
+                wordValues.append(tfidf.idf_[tfidf.vocabulary_[word]])
+        averageTfidf = sum(wordValues) / len(wordValues)
+        maxTfidf = max(wordValues)
+        row = [maxTfidf, averageTfidf, row['sentiment']]
         features.append(row)
     return pd.DataFrame(features)
 
-def main():
+def get_data():
     data.replace("[^a-zA-Z]", " ", regex=True, inplace=True)
     for index, row in data.iterrows():
         #replace sentiment with numerical values
@@ -45,5 +43,4 @@ def main():
         corpus.append(data.at[index, 'tweet_content'])
     preprocess(corpus)
     features = get_features()
-    print(features)
-main()
+    return features

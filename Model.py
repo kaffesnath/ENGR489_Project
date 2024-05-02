@@ -1,42 +1,33 @@
 import operator
 import numpy as np
 import pandas as pd
-import sys
 import random
+import preprocess
+import evaluate
 from deap import base, creator, gp, tools, algorithms
 from sklearn.feature_extraction.text import TfidfVectorizer;
 
-tfidf = TfidfVectorizer()
-def preprocess(description):
-    tfidf.fit_transform(description)
-
-def evaluate(x):
-    # Load data
-    data = pd.read_csv(sys.argv[1])
-    # Preprocess data
-    vectorised = []
-    for row in data.iterrows():
-        description = row[3]
-        preprocess(description)
-        newRow = [tfidf.transform(description), 1 if row[2] == 'Positive' else 0]
-        vectorised.append(newRow)
-    # Split data
-    x = [row[0] for row in vectorised]
-    y = [row[1] for row in vectorised]
-    # Train model
-    model = RandomForestClassifier()
-    model.fit(x, y)
-    # Evaluate model
-    return model.score(x, y)
-
 toolbox = base.Toolbox()
+
+data = preprocess.get_data()
+target = data[2]
+data = data.drop(columns=[2])
+
+def eval(individual):
+    return evaluate.evaluate_model(individual, data, toolbox, target)
+
+def protectedDiv(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return 1
 
 #define pset
 pset = gp.PrimitiveSet("MAIN", 1)
 pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
-pset.addPrimitive(operator.truediv, 2)
+pset.addPrimitive(protectedDiv, 2)
 pset.addTerminal(random.uniform(-1, 1))
 pset.renameArguments(ARG0='x')
 
@@ -51,7 +42,7 @@ toolbox.register("compile", gp.compile, pset=pset)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("mutate", gp.mutNodeReplacement)
 toolbox.register("select", tools.selTournament, tournsize=5)
-toolbox.register("evaluate", evaluate)
+toolbox.register("evaluate", eval)
 
 def main():
     random.seed(999)
@@ -64,7 +55,7 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.1, 40, stats=mstats, halloffame=hof, verbose=True)
+    pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 40, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
 
 if __name__ == "__main__":
