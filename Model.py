@@ -10,11 +10,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer;
 toolbox = base.Toolbox()
 
 data = preprocess.get_data()
-target = data[2]
-data = data.drop(columns=[2])
 
 def eval(individual):
-    return evaluate.evaluate_model(individual, data, toolbox, target)
+    print(data)
+    points = points=[x/10. for x in range(-10,10)]
+    func = toolbox.compile(expr=individual)
+    return evaluate.evaluate_model(func, points)
 
 def protectedDiv(a, b):
     try:
@@ -28,7 +29,10 @@ pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
 pset.addPrimitive(protectedDiv, 2)
-pset.addTerminal(random.uniform(-1, 1))
+pset.addPrimitive(operator.neg, 1)
+#terminal set 0 or 1
+pset.addTerminal(1)
+pset.addTerminal(0)
 pset.renameArguments(ARG0='x')
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -40,7 +44,7 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 # Define genetic operators
 toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("mutate", gp.mutNodeReplacement)
+toolbox.register("mutate", gp.mutNodeReplacement, pset=pset)
 toolbox.register("select", tools.selTournament, tournsize=5)
 toolbox.register("evaluate", eval)
 

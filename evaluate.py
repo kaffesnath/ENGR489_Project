@@ -5,6 +5,6 @@ import random
 import preprocess
 from deap import base, creator, gp, tools, algorithms
 
-def evaluate_model(individual, data, toolbox, target):
-    func = toolbox.compile(expr=individual)
-    return np.mean(np.abs(func(data) - target)),
+def evaluate_model(func, points):
+    sqerrors = ((func(x) - x**4 - x**3 - x**2 - x)**2 for x in points)
+    return np.sum(sqerrors) / len(points)
