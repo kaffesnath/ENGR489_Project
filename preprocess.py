@@ -37,15 +37,11 @@ def get_features():
 def clean_data(text):
     #remove links
     text = str(text)
-    text = re.sub(r'pic\.twitter\.com/.*', "", text)
-    text = re.sub(r'pic.twitter.com/[\w]*',"", text)
-    text = re.sub(r'dlvr.it /[\w]*',"", text)
-    text = re.sub(r'dlvr.it/[\w]*',"", text)
-    text = re.sub(r'twitch.tv / [\w]*',"", text)
-    text = re.sub(r'twitch.tv/[\w]*',"", text)
+    text = re.sub('(https?:\/\/)?(\w+\.)?(\w+\.)?\w+\.\w+(\s*\/\s*\w+)*', '', text) 
     #remove special characters
     text = re.sub(r'[^a-zA-Z ]', '', text)
     text = text.lower()
+    text = re.sub(r' +', ' ', text).strip()
     return text
 
 def get_data():
