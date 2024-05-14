@@ -20,7 +20,6 @@ def longest_sentence(data):
         sentence = len(row['tweet_content'].split())
         if sentence > max:
             max = sentence
-            print(row['tweet_content'])
     return max
 
 def get_features():
@@ -37,7 +36,8 @@ def get_features():
 
 def clean_data(text):
     #remove links
-    text = re.sub(r'pic.twitter.com / [\w]*',"", text)
+    text = str(text)
+    text = re.sub(r'pic\.twitter\.com/.*', "", text)
     text = re.sub(r'pic.twitter.com/[\w]*',"", text)
     text = re.sub(r'dlvr.it /[\w]*',"", text)
     text = re.sub(r'dlvr.it/[\w]*',"", text)
@@ -45,11 +45,11 @@ def clean_data(text):
     text = re.sub(r'twitch.tv/[\w]*',"", text)
     #remove special characters
     text = re.sub(r'[^a-zA-Z ]', '', text)
-    print(text)
     text = text.lower()
     return text
 
 def get_data():
+    results = np.zeros(len(data))
     for index, row in data.iterrows():
         row['sentiment'] = row['sentiment'].lower()
         row['tweet_content'] = clean_data(row['tweet_content'])
@@ -60,13 +60,13 @@ def get_data():
             data.at[index, 'sentiment'] = 0
         else:
             data.at[index, 'sentiment'] = 2
-
         data.at[index, 'tweet_content'] = row['tweet_content']
     corpus = []
     for index, row in data.iterrows():
         #preprocess the tweet content
-        corpus.append(data.at[index, 'tweet_content'])
+        if(data.at[index, 'sentiment'] != 2):
+            corpus.append(data.at[index, 'tweet_content'])
+            results[index] = data.at[index, 'sentiment']
     preprocess(corpus)
     features = get_features()
-    #print(features)
-    return features
+    return features, results

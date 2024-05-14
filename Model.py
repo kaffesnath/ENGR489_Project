@@ -9,31 +9,38 @@ from sklearn.feature_extraction.text import TfidfVectorizer;
 
 toolbox = base.Toolbox()
 
-data = preprocess.get_data()
+#Split ratio constant
+SPLIT_CONSTANT = 0.8
+
+data, results = preprocess.get_data()
+split = int(len(data) * SPLIT_CONSTANT)
+test = data.tail(len(data)-split)
+test_results = results[split:]
+data = data.head(split)
 
 def eval(individual):
-    print(data)
-    points = points=[x/10. for x in range(-10,10)]
     func = toolbox.compile(expr=individual)
-    return evaluate.evaluate_model(func, points)
+    return evaluate.evaluate_model(func, test, test_results)
 
 def protectedDiv(a, b):
     try:
         return a / b
     except ZeroDivisionError:
         return 1
-
+    
 #define pset
-pset = gp.PrimitiveSet("MAIN", 1)
+pset = gp.PrimitiveSet("MAIN", len(data.columns))
 pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
 pset.addPrimitive(protectedDiv, 2)
 pset.addPrimitive(operator.neg, 1)
-#terminal set 0 or 1
-pset.addTerminal(1)
-pset.addTerminal(0)
-pset.renameArguments(ARG0='x')
+#define terminal set
+pset.addTerminal(random.uniform(-1, 1))
+#argument definition
+for i in range(0, len(data.columns)):
+    pset.renameArguments(ARG0='x{}'.format(i))
+
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax, pset=pset)
@@ -59,7 +66,7 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 40, stats=mstats, halloffame=hof, verbose=True)
+    pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 50, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
 
 if __name__ == "__main__":

@@ -1,10 +1,15 @@
-import operator
 import numpy as np
 import pandas as pd
-import random
-import preprocess
-from deap import base, creator, gp, tools, algorithms
+from sklearn.feature_extraction.text import TfidfVectorizer;
 
-def evaluate_model(func, points):
-    sqerrors = ((func(x) - x**4 - x**3 - x**2 - x)**2 for x in points)
-    return np.sum(sqerrors) / len(points)
+def evaluate_model(func, test, test_results):
+    correct = 0
+    result_counter = 0
+    for index, row in test.iterrows():
+        if func(*test) > 0.5 and test_results[result_counter] == 1:
+            correct += 1
+        elif func(*test) <= 0.5 and test_results[result_counter] == 0:
+            correct += 1
+        result_counter += 1
+    return correct / len(test),
+    
