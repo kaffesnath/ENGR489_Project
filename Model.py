@@ -69,5 +69,4 @@ def main():
     pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 50, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
 
-if __name__ == "__main__":
-    main()
+#main()
