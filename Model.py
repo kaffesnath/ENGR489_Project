@@ -3,24 +3,19 @@ import numpy as np
 import pandas as pd
 import random
 import preprocess
+import Word2VecTest
 import evaluate
 from deap import base, creator, gp, tools, algorithms
 from sklearn.feature_extraction.text import TfidfVectorizer;
 
 toolbox = base.Toolbox()
 
-#Split ratio constant
-SPLIT_CONSTANT = 0.8
-
-data, results = preprocess.get_data()
-split = int(len(data) * SPLIT_CONSTANT)
-test = data.tail(len(data)-split)
-test_results = results[split:]
-data = data.head(split)
+#Get data
+data = Word2VecTest.get_data()
 
 def eval(individual):
     func = toolbox.compile(expr=individual)
-    return evaluate.evaluate_model(func, test, test_results)
+    return evaluate.evaluate_model(data, func),
 
 def protectedDiv(a, b):
     try:
@@ -29,7 +24,7 @@ def protectedDiv(a, b):
         return 1
     
 #define pset
-pset = gp.PrimitiveSet("MAIN", len(data.columns))
+pset = gp.PrimitiveSet("MAIN", 5)
 pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
@@ -38,7 +33,7 @@ pset.addPrimitive(operator.neg, 1)
 #define terminal set
 pset.addTerminal(random.uniform(-1, 1))
 #argument definition
-for i in range(0, len(data.columns)):
+for i in range(0, len(data.index) - 1):
     pset.renameArguments(ARG0='x{}'.format(i))
 
 
@@ -68,5 +63,4 @@ def main():
     mstats.register("max", np.max)
     pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 50, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
-
-#main()
+main()
