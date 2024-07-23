@@ -2,11 +2,10 @@ import operator
 import numpy as np
 import pandas as pd
 import random
-import preprocess
 import Word2VecTest
 import evaluate
+from sklearn.ensemble import RandomForestClassifier
 from deap import base, creator, gp, tools, algorithms
-from sklearn.feature_extraction.text import TfidfVectorizer;
 
 toolbox = base.Toolbox()
 
@@ -24,7 +23,7 @@ def protectedDiv(a, b):
         return 1
     
 #define pset
-pset = gp.PrimitiveSet("MAIN", 5)
+pset = gp.PrimitiveSet("MAIN", len(data.columns) - 1)
 pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
@@ -33,11 +32,11 @@ pset.addPrimitive(operator.neg, 1)
 #define terminal set
 pset.addTerminal(random.uniform(-1, 1))
 #argument definition
-for i in range(0, len(data.index) - 1):
+for i in range(0, len(data.columns) - 1):
     pset.renameArguments(ARG0='x{}'.format(i))
 
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("FitnessMax", base.Fitness, weights=(0.5,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax, pset=pset)
 
 toolbox.register("expr", gp.genFull, pset=pset, min_=1, max_=3)
@@ -53,7 +52,7 @@ toolbox.register("evaluate", eval)
 def main():
     random.seed(999)
     pop = toolbox.population(n=300)
-    hof = tools.HallOfFame(1)
+    hof = tools.HallOfFame(2)
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
     stats_size = tools.Statistics(len)
     mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
@@ -61,6 +60,6 @@ def main():
     mstats.register("std", np.std)
     mstats.register("min", np.min)
     mstats.register("max", np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 50, stats=mstats, halloffame=hof, verbose=True)
+    pop, log = algorithms.eaSimple(pop, toolbox, 0.7, 0.2, 100, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
 main()

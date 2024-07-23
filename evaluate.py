@@ -4,8 +4,8 @@ import pandas as pd
 def evaluate_model(data, func):
     score = 0
     for index, row in data.iterrows():
-        inst = row[:5]
-        sentiment = int(row[5])  
+        inst = row[:row.size - 1]
+        sentiment = row[row.size - 1]
         #set upper and lower bounds for sentiment
         upper = 0.8
         lower = 0.2
