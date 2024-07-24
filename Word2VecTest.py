@@ -1,11 +1,10 @@
-import operator
 import numpy as np
 import pandas as pd
-import random
-import preprocess
 from gensim.models import Word2Vec as w2v
 from gensim.parsing.preprocessing import remove_stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer;
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from gensim.models import Doc2Vec as d2v
+from gensim.models.doc2vec import TaggedDocument
 import sys
 import re
 
@@ -20,7 +19,12 @@ def clean_data(text):
     text = re.sub(r'[^a-zA-Z ]', '', text)
     text = text.lower()
     text = re.sub(r' +', ' ', text).strip()
+    #removes stopwords and stems the words
     text = remove_stopwords(text)
+    text = PorterStemmer().stem(text)
+    text = WordNetLemmatizer().lemmatize(text)
+    if text == '':
+        return 'empty'
     return text
 
 def replace_sentiment(sentiment):
@@ -37,47 +41,27 @@ def get_data():
     data = data[['tweet_content', 'sentiment']]
     data['sentiment'] = data['sentiment'].apply(replace_sentiment)
 
-    sentences = []
     corpus = []
-    embeddings = {}
+    embeddings = []
     
-    dimensions = 100
+    dimensions = 40
 
     #preprocess and clean data
     for index, row in data.iterrows():
         sentence = clean_data(row['tweet_content'])
-        sentences.append(sentence)
-        corpus.append(sentence.split())
+        if sentence != 'empty':
+            corpus.append(TaggedDocument(sentence.split(), [str(index)]))
 
     #Window represents the field in which relations are calcuated and considered for the matrix
     #Min count represents the lowest repetitions required for a word to be considered for the matrix
     #Workers represents the number of threads used to train the model
-    w2v_model = w2v(corpus, vector_size=dimensions, window=5, min_count=1, workers=4)
+    d2v_model = d2v(corpus, vector_size=dimensions, window=5, min_count=1, workers=4)
 
-    word_set = set()
-    for sentence in sentences:
-        words = sentence.split()
-        for word in words:
-            word_set.add(word)
-    
-    for word in word_set:
-        if word in w2v_model.wv:
-            embeddings[word] = w2v_model.wv[word]
-        else:
-            embeddings[word] = np.zeros(dimensions)
-    
-    sentence_data = []
-    for index, row in data.iterrows():
-        sentence = str(row['tweet_content'])
-        sentence_embedding = np.zeros(dimensions)
-        for word in sentence.split():
-            if word in embeddings:
-                sentence_embedding += embeddings[word]
-        sentence_data.append(sentence_embedding)
-    #convert to dataframe
-    sentence_data = pd.DataFrame(sentence_data)
-    sentence_data[dimensions] = data['sentiment']
-    return sentence_data
+    for sentence in corpus:
+        embeddings.append(d2v_model.infer_vector(sentence.words))
+    embeddings = pd.DataFrame(embeddings)
+    embeddings[len(embeddings.columns)] = data['sentiment']
+    return embeddings
             
     
 
