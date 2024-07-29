@@ -3,6 +3,7 @@ import pandas as pd
 from gensim.models import Word2Vec as w2v
 from gensim.parsing.preprocessing import remove_stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from gensim.models import Doc2Vec as d2v
 from gensim.models.doc2vec import TaggedDocument
 import sys
@@ -15,6 +16,7 @@ def clean_data(text):
     #remove mentions or user handles
     text = re.sub('(^|\B)@ \w+', '', text)
     text = re.sub('(^|\B)@\w+', '', text)
+    text = re.sub('(<(.*?)>)', '', text)
     #remove special characters
     text = re.sub(r'[^a-zA-Z ]', '', text)
     text = text.lower()
@@ -44,7 +46,7 @@ def get_data():
     corpus = []
     embeddings = []
     
-    dimensions = 40
+    dimensions = 46
 
     #preprocess and clean data
     for index, row in data.iterrows():
@@ -52,13 +54,17 @@ def get_data():
         if sentence != 'empty':
             corpus.append(TaggedDocument(sentence.split(), [str(index)]))
 
-    #Window represents the field in which relations are calcuated and considered for the matrix
-    #Min count represents the lowest repetitions required for a word to be considered for the matrix
-    #Workers represents the number of threads used to train the model
+
+    # Hutto, C.J. & Gilbert, E.E. (2014). VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text. 
+    # Eighth International Conference on Weblogs and Social Media (ICWSM-14). Ann Arbor, MI, June 2014.
+    
+    sia = SentimentIntensityAnalyzer()
     d2v_model = d2v(corpus, vector_size=dimensions, window=5, min_count=1, workers=4)
 
     for sentence in corpus:
-        embeddings.append(d2v_model.infer_vector(sentence.words))
+        d2v_embed = d2v_model.infer_vector(sentence.words)
+        sia_embed = sia.polarity_scores(' '.join(sentence.words))
+        embeddings.append(np.concatenate((d2v_embed, list(sia_embed.values()))))
     embeddings = pd.DataFrame(embeddings)
     embeddings[len(embeddings.columns)] = data['sentiment']
     return embeddings

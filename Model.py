@@ -30,8 +30,6 @@ pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
 pset.addPrimitive(protectedDiv, 2)
-pset.addPrimitive(operator.neg, 1)
-pset.addPrimitive(operator.abs, 1)
 
 creator.create("FitnessMax", base.Fitness, weights=(0.5,))
 creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax, pset=pset)
