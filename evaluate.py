@@ -1,21 +1,17 @@
 import numpy as np
 import pandas as pd
+import math
 
 def evaluate_model(data, func):
-    score = 0
-    for index, row in data.iterrows():
-        inst = row[:row.size - 1]
-        sentiment = row[row.size - 1]
-        #set upper and lower bounds for sentiment
-        upper = 0.75
-        lower = -0.75
-        result = func(*inst)
-        if sentiment == 1 and result > upper:
-            score += 1
-        elif sentiment == 0 and result < lower:
-            score += 1
-        elif sentiment == 2 and result >= lower and result <= upper:
-            score += 1
-    return score / len(data)
+    #get the features
+    features = data[data.columns[:-1]]
+    #get the results
+    results = data[data.columns[-1]]
+    #get the predictions
+    sqerrors = []
+    for index, row in features.iterrows():
+        sqerrors.append((func(*row) - results[index])**2)
+    #return the accuracy
+    return math.fsum(sqerrors) / len(sqerrors), 
             
     

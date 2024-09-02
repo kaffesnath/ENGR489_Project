@@ -5,17 +5,17 @@ import random
 import evaluate
 import warnings
 import sys
+import Word2VecTest as pps
 from deap import base, creator, gp, tools, algorithms
 
 warnings.filterwarnings("ignore")
 toolbox = base.Toolbox()
 
 #Get data
-data = pd.read_csv('datasets/features,csv')
-
+data = pps.get_data()
 def eval(individual):
     func = toolbox.compile(expr=individual)
-    return evaluate.evaluate_model(data, func),
+    return evaluate.evaluate_model(data, func)
 
 def protectedDiv(a, b):
     try:
@@ -23,14 +23,21 @@ def protectedDiv(a, b):
     except ZeroDivisionError:
         return 1
     
-def main():
+def protectedSqrt(a):
+    if a < 0:
+        return 1
+    else:
+        return np.sqrt(a)
+
+def main(seed):
     #all parameters
-    MAX_DEPTH = 8
-    TOURNEY_SIZE = 10
-    CXPB = 0.85
-    MUTPB = 0.15
+    random.seed(seed)
+    MAX_DEPTH = 10
+    TOURNEY_SIZE = 20
+    CXPB = 0.7
+    MUTPB = 0.3
     NGEN = 50
-    POP = 300
+    POP = 400
 
     #define pset
     pset = gp.PrimitiveSet("MAIN", len(data.columns) - 1)
@@ -38,9 +45,10 @@ def main():
     pset.addPrimitive(operator.sub, 2)
     pset.addPrimitive(operator.mul, 2)
     pset.addPrimitive(protectedDiv, 2)
+    pset.addEphemeralConstant("rand101", lambda: random.randint(-2,2))
 
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax, pset=pset)
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)
 
     toolbox.register("expr", gp.genFull, pset=pset, min_=2, max_=MAX_DEPTH)
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
@@ -52,7 +60,7 @@ def main():
     toolbox.register("select", tools.selTournament, tournsize=TOURNEY_SIZE)
     toolbox.register("evaluate", eval)
 
-    random.seed(999)
+    
     pop = toolbox.population(n=POP)
     hof = tools.HallOfFame(1)
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -64,4 +72,6 @@ def main():
     mstats.register("max", np.max)
     pop, log = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
-main()
+pop, log, hof = main(999)
+print(hof[0])
+print(hof[0].fitness.values)

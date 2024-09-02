@@ -32,11 +32,11 @@ def clean_data(text):
 def replace_sentiment(sentiment):
     sentiment = sentiment.lower()
     if sentiment == 'positive':
-        return 1
-    elif sentiment == 'negative':
-        return 0
-    else:
         return 2
+    elif sentiment == 'negative':
+        return -2
+    else:
+        return 0
 
 def get_data():
     data = pd.read_csv('datasets/' + sys.argv[1], names=['tweet_id', 'entity', 'sentiment', 'tweet_content'])
@@ -72,7 +72,6 @@ def get_data():
 def main():
     features = get_data()
     features.to_csv('datasets/features.csv', index=False)
-main()
             
     
 
