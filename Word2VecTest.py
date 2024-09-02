@@ -39,14 +39,14 @@ def replace_sentiment(sentiment):
         return 2
 
 def get_data():
-    data = pd.read_csv(sys.argv[1], names=['tweet_id', 'entity', 'sentiment', 'tweet_content'])
+    data = pd.read_csv('datasets/' + sys.argv[1], names=['tweet_id', 'entity', 'sentiment', 'tweet_content'])
     data = data[['tweet_content', 'sentiment']]
     data['sentiment'] = data['sentiment'].apply(replace_sentiment)
 
     corpus = []
-    embeddings = []
+    features = []
     
-    dimensions = 46
+    dimensions = 50
 
     #preprocess and clean data
     for index, row in data.iterrows():
@@ -64,10 +64,15 @@ def get_data():
     for sentence in corpus:
         d2v_embed = d2v_model.infer_vector(sentence.words)
         sia_embed = sia.polarity_scores(' '.join(sentence.words))
-        embeddings.append(np.concatenate((d2v_embed, list(sia_embed.values()))))
-    embeddings = pd.DataFrame(embeddings)
-    embeddings[len(embeddings.columns)] = data['sentiment']
-    return embeddings
+        features.append(np.concatenate((d2v_embed, list(sia_embed.values()))))
+    features = pd.DataFrame(features)
+    features[len(features.columns)] = data['sentiment']
+    return features
+
+def main():
+    features = get_data()
+    features.to_csv('datasets/features.csv', index=False)
+main()
             
     
 

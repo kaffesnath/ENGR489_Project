@@ -1,4 +1,3 @@
-import Word2VecTest
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
@@ -17,7 +16,7 @@ def split_data(data, x):
     return train, test, train_results, test_results
 
 def main():
-    data = Word2VecTest.get_data()
+    data = pd.read_csv('datasets/features.csv')
     training_data = []
     #train model
     model = DecisionTreeClassifier()

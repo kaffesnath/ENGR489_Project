@@ -7,8 +7,8 @@ def evaluate_model(data, func):
         inst = row[:row.size - 1]
         sentiment = row[row.size - 1]
         #set upper and lower bounds for sentiment
-        upper = 0.8
-        lower = 0.2
+        upper = 0.75
+        lower = -0.75
         result = func(*inst)
         if sentiment == 1 and result > upper:
             score += 1
