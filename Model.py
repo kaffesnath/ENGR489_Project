@@ -2,7 +2,9 @@ import operator
 import numpy as np
 import pandas as pd
 import random
-import evaluate
+from evaluate import evaluate_model_mse as mse
+from evaluate import evaluate_model_rmse as rmse
+from evaluate import evaluate_model_r_squared as r_squared
 import warnings
 import sys
 import Word2VecTest as pps
@@ -13,21 +15,19 @@ toolbox = base.Toolbox()
 
 #Get data
 data = pps.get_data()
+
 def eval(individual):
+    # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
-    return evaluate.evaluate_model(data, func)
+    # Evaluate the mean squared error between the expression
+    # and the real function MSE
+    return mse(data, func)
 
 def protectedDiv(a, b):
     try:
         return a / b
     except ZeroDivisionError:
         return 1
-    
-def protectedSqrt(a):
-    if a < 0:
-        return 1
-    else:
-        return np.sqrt(a)
 
 def main(seed):
     #all parameters
@@ -45,7 +45,6 @@ def main(seed):
     pset.addPrimitive(operator.sub, 2)
     pset.addPrimitive(operator.mul, 2)
     pset.addPrimitive(protectedDiv, 2)
-    pset.addEphemeralConstant("rand101", lambda: random.randint(-2,2))
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)

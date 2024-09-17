@@ -8,6 +8,7 @@ from gensim.models import Doc2Vec as d2v
 from gensim.models.doc2vec import TaggedDocument
 import sys
 import re
+wnl = WordNetLemmatizer()
 
 def clean_data(text):
     #remove links
@@ -23,26 +24,34 @@ def clean_data(text):
     text = re.sub(r' +', ' ', text).strip()
     #removes stopwords and stems the words
     text = remove_stopwords(text)
-    text = PorterStemmer().stem(text)
-    text = WordNetLemmatizer().lemmatize(text)
+    #text = PorterStemmer().stem(text)
+    text = ' '.join([wnl.lemmatize(word) for word in text.split()])
     if text == '':
         return 'empty'
     return text
 
-def replace_sentiment(sentiment):
-    sentiment = sentiment.lower()
-    if sentiment == 'positive':
-        return 2
-    elif sentiment == 'negative':
-        return -2
-    else:
-        return 0
+def create_sentiment(x):
+    nums = x.split(',')
+    #drop first item
+    nums = nums[1:]
+    #convert to integers
+    nums = [int(i) for i in nums]
+    #return average of list
+    return sum(nums)/len(nums)
 
 def get_data():
-    data = pd.read_csv('datasets/' + sys.argv[1], names=['tweet_id', 'entity', 'sentiment', 'tweet_content'])
-    data = data[['tweet_content', 'sentiment']]
-    data['sentiment'] = data['sentiment'].apply(replace_sentiment)
+    with open('datasets/stanford/sentlex_exp12.txt') as f:
+        lines = f.readlines()
+    #remove index of item
+    lines = [i.split(',', 1)[1] for i in lines]
+    #remove newline characters
+    lines = [i.replace('\n', '') for i in lines]
+    data = pd.DataFrame(lines)
 
+    with open('datasets/stanford/rawscores_exp12.txt') as f:
+        lines = f.readlines()
+    data['sentiment'] = [create_sentiment(i) for i in lines]
+    data.columns = ['tweet_content', 'sentiment']
     corpus = []
     features = []
     
@@ -51,9 +60,19 @@ def get_data():
     #preprocess and clean data
     for index, row in data.iterrows():
         sentence = clean_data(row['tweet_content'])
-        if sentence != 'empty':
-            corpus.append(TaggedDocument(sentence.split(), [str(index)]))
+        corpus.append(sentence)
 
+    #map corpus data to main dataset
+    data['tweet_content'] = corpus
+
+    #drop all with empty string
+    data = data[data['tweet_content'] != 'empty']
+
+    #drop duplicates
+    data.drop_duplicates(subset='tweet_content', inplace=True)
+    corpus = data['tweet_content'].tolist() 
+    #tag each sentence with an index
+    corpus = [TaggedDocument(words=sentence.split(), tags=[str(i)]) for i, sentence in enumerate(corpus)]
 
     # Hutto, C.J. & Gilbert, E.E. (2014). VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text. 
     # Eighth International Conference on Weblogs and Social Media (ICWSM-14). Ann Arbor, MI, June 2014.
@@ -66,7 +85,11 @@ def get_data():
         sia_embed = sia.polarity_scores(' '.join(sentence.words))
         features.append(np.concatenate((d2v_embed, list(sia_embed.values()))))
     features = pd.DataFrame(features)
+    data.reset_index(drop=True, inplace=True)
     features[len(features.columns)] = data['sentiment']
+    #take first 1% of data for testing after shuffling
+    features = features.sample(frac=1)
+    features = features[:int(len(features) * 0.01)]
     return features
 
 def main():
