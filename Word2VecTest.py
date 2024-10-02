@@ -55,7 +55,7 @@ def get_data():
     corpus = []
     features = []
     
-    dimensions = 50
+    dimensions = 30
 
     #preprocess and clean data
     for index, row in data.iterrows():
@@ -69,7 +69,7 @@ def get_data():
     data = data[data['tweet_content'] != 'empty']
 
     #drop duplicates
-    data.drop_duplicates(subset='tweet_content', inplace=True)
+    data.drop_duplicates(subset='tweet_content', inplace=True, keep='first')
     corpus = data['tweet_content'].tolist() 
     #tag each sentence with an index
     corpus = [TaggedDocument(words=sentence.split(), tags=[str(i)]) for i, sentence in enumerate(corpus)]
@@ -89,7 +89,7 @@ def get_data():
     features[len(features.columns)] = data['sentiment']
     #take first 1% of data for testing after shuffling
     features = features.sample(frac=1)
-    features = features[:int(len(features) * 0.01)]
+    features = features[:int(len(features) * 0.001)]
     return features
 
 def main():

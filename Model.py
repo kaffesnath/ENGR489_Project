@@ -8,6 +8,7 @@ from evaluate import evaluate_model_r_squared as r_squared
 import warnings
 import sys
 import Word2VecTest as pps
+import matplotlib.pyplot as plt
 from deap import base, creator, gp, tools, algorithms
 
 warnings.filterwarnings("ignore")
@@ -32,11 +33,11 @@ def protectedDiv(a, b):
 def main(seed):
     #all parameters
     random.seed(seed)
-    MAX_DEPTH = 10
+    MAX_DEPTH = 8
     TOURNEY_SIZE = 20
-    CXPB = 0.7
-    MUTPB = 0.3
-    NGEN = 50
+    CXPB = 0.8
+    MUTPB = 0.2
+    NGEN = 100
     POP = 400
 
     #define pset
@@ -71,6 +72,23 @@ def main(seed):
     mstats.register("max", np.max)
     pop, log = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=mstats, halloffame=hof, verbose=True)
     return pop, log, hof
-pop, log, hof = main(999)
-print(hof[0])
-print(hof[0].fitness.values)
+gens_total = []
+for i in range(10):
+    pop, log, hof = main(i * 8)
+    #get every best value for each generation
+    gens_total.append(log.chapters['fitness'].select('min'))
+
+#plot the results
+average = []
+for i in range(len(gens_total[0])):
+    total = 0
+    for j in range(len(gens_total)):
+        total += gens_total[j][i]
+    average.append(total / len(gens_total))
+plt.plot(average)
+plt.title('Average RMSE over 10 runs')
+plt.ylabel('Average RMSE')
+plt.xlabel('Generation')
+plt.show()
+
+
