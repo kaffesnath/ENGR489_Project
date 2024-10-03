@@ -55,7 +55,7 @@ def get_data():
     corpus = []
     features = []
     
-    dimensions = 30
+    dimensions = 50
 
     #preprocess and clean data
     for index, row in data.iterrows():

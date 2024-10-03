@@ -19,7 +19,10 @@ data = pps.get_data()
 
 def eval(individual):
     # Transform the tree expression in a callable function
-    func = toolbox.compile(expr=individual)
+    try:
+        func = toolbox.compile(expr=individual)
+    except SyntaxError:
+        return sys.float_info.max,
     # Evaluate the mean squared error between the expression
     # and the real function MSE
     return mse(data, func)
@@ -29,6 +32,12 @@ def protectedDiv(a, b):
         return a / b
     except ZeroDivisionError:
         return 1
+    
+def sum(*args):
+    total = 0
+    for arg in args:
+        total += arg
+    return total
 
 def main(seed):
     #all parameters
@@ -46,6 +55,9 @@ def main(seed):
     pset.addPrimitive(operator.sub, 2)
     pset.addPrimitive(operator.mul, 2)
     pset.addPrimitive(protectedDiv, 2)
+    pset.addPrimitive(operator.neg, 1)
+    #base terminal defines bounds of 1-25 in the centre
+    pset.addTerminal(12.5)
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)
@@ -86,9 +98,11 @@ for i in range(len(gens_total[0])):
         total += gens_total[j][i]
     average.append(total / len(gens_total))
 plt.plot(average)
-plt.title('Average RMSE over 10 runs')
-plt.ylabel('Average RMSE')
+plt.title('Average MSE over 10 runs')
+plt.ylabel('Average MSE')
 plt.xlabel('Generation')
 plt.show()
+
+print('Average Ending MSE:', average[-1])
 
 
