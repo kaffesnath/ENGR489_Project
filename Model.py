@@ -8,7 +8,7 @@ from evaluate import evaluate_model_r_squared as r_squared
 import warnings
 import sys
 import multiprocessing
-import Word2VecTest as pps
+import Pipeline as pps
 import matplotlib.pyplot as plt
 from deap import base, creator, gp, tools, algorithms
 
@@ -26,7 +26,7 @@ def eval(individual):
         return sys.float_info.max,
     # Evaluate the mean squared error between the expression
     # and the real function MSE
-    return rmse(data, func)
+    return mse(data, func)
 
 def protectedDiv(a, b):
     try:
@@ -46,7 +46,7 @@ def create_toolbox():
     pset.addEphemeralConstant("x1", lambda: random.uniform(0.1, 2))
     pset.addEphemeralConstant("x2", lambda: random.uniform(-2, -0.1))
 
-    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("FitnessMin", base.Fitness, weights=(1.0,))
     creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)
 
     toolbox.register("expr", gp.genFull, pset=pset, min_=2, max_=MAX_DEPTH)
@@ -82,7 +82,7 @@ def gp_instance(seed):
     mstats.register("min", np.min)
     mstats.register("max", np.max)
     pop, log = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=mstats, halloffame=hof, verbose=True)
-    return log.chapters['fitness'].select('min')
+    return log.chapters['fitness'].select('max')
 
 def run_gp():
     num_threads = 4
@@ -107,14 +107,14 @@ def main():
             total += gens_total[j][i]
         average.append(total / len(gens_total))
     plt.plot(average)
-    plt.title('Average MSE over 10 runs')
-    plt.ylabel('Average MSE')
+    plt.title('Average R2 over 10 runs')
+    plt.ylabel('Average R2')
     plt.xlabel('Generation')
     plt.show()
 
-    print('Average Ending MSE:', np.mean(final))
-    print('Standard Deviation Ending MSE:', np.std(final))
-    print('Minimum Ending MSE:', np.min(final))
+    print('Average Ending R2:', np.mean(final))
+    print('Standard Deviation Ending R2:', np.std(final))
+    print('Maximum Ending R2:', np.max(final))
 
 if __name__ == '__main__':
     main()
