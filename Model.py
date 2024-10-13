@@ -5,6 +5,7 @@ import random
 from evaluate import evaluate_model_mse as mse
 from evaluate import evaluate_model_rmse as rmse
 from evaluate import evaluate_model_r_squared as r_squared
+from sklearn.model_selection import train_test_split
 import warnings
 import sys
 import multiprocessing
@@ -17,6 +18,10 @@ toolbox = base.Toolbox()
 
 #Get data
 data = pps.get_data()
+#data = data.sample(frac=0.001)
+train, test = train_test_split(data, test_size=0.1, random_state=42)
+fitness = 'mse'
+test_type = 'class'
 
 def eval(individual):
     # Transform the tree expression in a callable function
@@ -26,7 +31,12 @@ def eval(individual):
         return sys.float_info.max,
     # Evaluate the mean squared error between the expression
     # and the real function MSE
-    return mse(data, func)
+    if fitness == 'mse':
+        return mse(data, func)
+    elif fitness == 'rmse':
+        return rmse(data, func)
+    else:
+        return r_squared(data, func)
 
 def protectedDiv(a, b):
     try:
@@ -43,11 +53,13 @@ def create_toolbox():
     pset.addPrimitive(operator.sub, 2)
     pset.addPrimitive(operator.mul, 2)
     pset.addPrimitive(protectedDiv, 2)
-    pset.addEphemeralConstant("x1", lambda: random.uniform(0.1, 2))
-    pset.addEphemeralConstant("x2", lambda: random.uniform(-2, -0.1))
-
-    creator.create("FitnessMin", base.Fitness, weights=(1.0,))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)
+    pset.addTerminal(2.5)
+    pset.addTerminal(2.5)
+    if fitness == 'r2':
+        creator.create("Fitness", base.Fitness, weights=(1.0,))
+    else:
+        creator.create("Fitness", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness, pset=pset)
 
     toolbox.register("expr", gp.genFull, pset=pset, min_=2, max_=MAX_DEPTH)
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
@@ -82,18 +94,25 @@ def gp_instance(seed):
     mstats.register("min", np.min)
     mstats.register("max", np.max)
     pop, log = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=mstats, halloffame=hof, verbose=True)
-    return log.chapters['fitness'].select('max')
+    if fitness == 'r2':
+        return log.chapters['fitness'].select('max'), hof
+    return log.chapters['fitness'].select('min'), hof
 
 def run_gp():
     num_threads = 4
     num_runs = 10
     with multiprocessing.Pool(num_threads) as pool:
-        gens_total = pool.map(gp_instance, range(num_runs))
+        results = pool.map(gp_instance, range(num_runs))
     pool.close()
     pool.join()
+    gens_total, hof = zip(*results)
+    gens_total = list(gens_total)
+    hof = list(hof)
+    print(hof[-1][0])
     return gens_total
 
-def main():
+
+def test_fitness():
     gens_total = run_gp()
     final = []
     for i in range(len(gens_total)):
@@ -107,15 +126,35 @@ def main():
             total += gens_total[j][i]
         average.append(total / len(gens_total))
     plt.plot(average)
-    plt.title('Average R2 over 10 runs')
-    plt.ylabel('Average R2')
+    plt.title('Average {} over 10 runs'.format(fitness.upper()))
+    plt.ylabel('Average {}'.format(fitness.upper()))
     plt.xlabel('Generation')
     plt.show()
 
-    print('Average Ending R2:', np.mean(final))
-    print('Standard Deviation Ending R2:', np.std(final))
-    print('Maximum Ending R2:', np.max(final))
+    print('Average Ending {}:{}'.format(fitness.upper(), np.mean(final)))
+    print('Standard Deviation Ending {}:{}'.format(fitness.upper(), np.std(final)))
+    if fitness == 'r2':
+        print('Maximum Ending {}:{}'.format(fitness.upper(), np.max(final)))
+    else:
+        print('Minimum Ending {}:{}'.format(fitness.upper(), np.min(final)))
+
+def class_eval():
+    log, hof = gp_instance(random.randint(2, 100))
+    func = hof[0]
+    print('Best Individual:', func)
+    func = toolbox.compile(expr=func)
+    print('Training Accuracy:', log[-1])
+    print('Test Accuracy:', mse(test, func)[0])
+
+
+def main(args):
+    global data
+    if args == 'test':
+        test_fitness()
+    else:
+        data = train
+        class_eval()
 
 if __name__ == '__main__':
-    main()
+    main(test_type)
 

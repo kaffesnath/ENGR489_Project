@@ -49,12 +49,10 @@ def create_sentiment(x):
 def create_features(vectors, sentiment):
     svc = SVC()
     x = vectors[vectors.columns[:-4]]
-    #rounds sentiment to nearest whole number and splits into 5 categories
     y = (round(sentiment) % 5) + 1
     svc.fit(x, y)
     preds = svc.predict(x)
-    pickle.dump(svc, open('datasets/stanford/svc.sav', 'wb'))
-    #returns predictions within the middle of each class definition on the 1-25 scale
+    pickle.dump(svc, open('datasets/stanford/svc2.sav', 'wb'))
     preds = preds * 5 - 2.5
     return preds
 
