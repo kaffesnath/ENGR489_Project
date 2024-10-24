@@ -1,17 +1,19 @@
 import numpy as np
 import pandas as pd
-from sklearn.svm import SVC
-from gensim.models import Word2Vec as w2v
+from sklearn.svm import LinearSVC, SVC
 from gensim.parsing.preprocessing import remove_stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from gensim.models import Doc2Vec as d2v
 from gensim.models.doc2vec import TaggedDocument
 import sys
+import gensim.downloader as api
+from sklearn.preprocessing import StandardScaler
 import pickle
 import os.path
 import re
 wnl = WordNetLemmatizer()
+ss = StandardScaler()
 
 def clean_data(text):
     original = text
@@ -44,17 +46,19 @@ def create_sentiment(x):
     #convert to integers
     nums = [int(i) for i in nums]
     #return average of list
-    return sum(nums) / len(nums)
+    return round(sum(nums) / len(nums))
 
 def create_features(vectors, sentiment):
-    svc = SVC()
-    x = vectors[vectors.columns[:-4]]
-    y = (round(sentiment) % 5) + 1
+    svc = LinearSVC(C = 0.1, max_iter=10000, class_weight='balanced')
+    x = ss.fit_transform(vectors)
+    y = round(sentiment % 5) + 1
     svc.fit(x, y)
-    preds = svc.predict(x)
-    pickle.dump(svc, open('datasets/stanford/svc2.sav', 'wb'))
-    preds = preds * 5 - 2.5
+    preds = svc.predict(vectors)
+    pickle.dump(svc, open('datasets/stanford/lsvc.sav', 'wb'))
     return preds
+
+def convert_sentiment(x):
+    return (x + 1) * 5 - 2.5
 
 def get_data():
     try:
@@ -89,7 +93,7 @@ def get_data():
     
     sia = SentimentIntensityAnalyzer()
     
-    dimensions = 300
+    dimensions = 200
 
     #preprocess and clean data
     for index, row in data.iterrows():
@@ -109,7 +113,8 @@ def get_data():
     #tag each sentence with an index
     corpus = [TaggedDocument(words=sentence.split(), tags=[str(i)]) for i, sentence in enumerate(corpus)]
 
-    d2v_model = d2v(corpus, vector_size=dimensions, window=8, min_count=5, workers=4)
+    # load google news doc2vec model
+    d2v_model = d2v(corpus, vector_size=dimensions, window=3, min_count=1, workers=4, epochs=20)
     d2v_model.save('datasets/stanford/d2v.model')
 
     data.reset_index(drop=True, inplace=True)
@@ -127,19 +132,6 @@ def get_data():
 
 def export_data(data):
     data.to_csv('datasets/stanford/processed_data_2.csv', index=False)
-
-def request(sentence):
-    d2v_model = d2v.load('datasets/stanford/d2v.model')
-    gbc = pickle.load(open('datasets/stanford/lsvm.sav', 'rb'))
-    sia = SentimentIntensityAnalyzer()
-    sentence = clean_data(sentence)
-    if sentence != 'empty':
-        d2v_embed = d2v_model.infer_vector(sentence.split())
-        estimate = gbc.predict(d2v_embed)
-        sia_embed = sia.polarity_scores(sentence)
-        result = np.concatenate(d2v_embed, list(sia_embed.values(), estimate))
-        print(result)
-        return result
     
 
             
