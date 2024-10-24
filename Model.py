@@ -12,6 +12,7 @@ import multiprocessing
 import Pipeline as pps
 import matplotlib.pyplot as plt
 from deap import base, creator, gp, tools, algorithms
+import pickle
 
 warnings.filterwarnings("ignore")
 toolbox = base.Toolbox()
@@ -53,7 +54,7 @@ def create_toolbox():
     pset.addPrimitive(operator.sub, 2)
     pset.addPrimitive(operator.mul, 2)
     pset.addPrimitive(protectedDiv, 2)
-    pset.addTerminal(2.5)
+    pset.addPrimitive(operator.neg, 1)
     pset.addTerminal(2.5)
     if fitness == 'r2':
         creator.create("Fitness", base.Fitness, weights=(1.0,))
@@ -142,6 +143,7 @@ def class_eval():
     log, hof = gp_instance(random.randint(2, 100))
     func = hof[0]
     print('Best Individual:', func)
+    pickle.dump(func, open('datasets/stanford/func.sav', 'wb'))
     func = toolbox.compile(expr=func)
     print('Training Accuracy:', log[-1])
     print('Test Accuracy:', mse(test, func)[0])
