@@ -8,6 +8,7 @@ from deap import base, creator, gp, tools, algorithms
 import operator
 import numpy as np
 ss = StandardScaler()
+classes = ['Very Negative', 'Negative', 'Neutral', 'Positive', 'Very Positive']
 
 def protectedDiv(a, b):
     try:
@@ -24,6 +25,18 @@ def create_pset():
     pset.addPrimitive(operator.neg, 1)
     pset.addTerminal(2.5)
     return pset
+
+def output_class(x):
+    if x < 5:
+        return classes[0]
+    elif x < 10:
+        return classes[1]
+    elif x < 15:
+        return classes[2]
+    elif x < 20:
+        return classes[3]
+    else:
+        return classes[4]
 
 def calc_sentiment(text):
     # Load models for calculating sentiment
@@ -51,8 +64,11 @@ def calc_sentiment(text):
     print(features)
     func = gp.compile(expr=func, pset=pset)
     polarity_score = func(*features)
-    # Return the sentiment
-    return polarity_score
+    # Return the sentiment as a String, limit to 2dp and output sentiment classification
+    string = f"Sentiment: {round(polarity_score, 2)}"
+    return string + f" : ({output_class(polarity_score)})"
+    
+    
 
 app = Flask(__name__)
 
