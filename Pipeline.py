@@ -81,7 +81,7 @@ def get_data():
         lines = f.readlines()
     data['sentiment'] = [create_sentiment(i) for i in lines]
     data.columns = ['tweet_content', 'sentiment']
-    #filter to 0.1% of data
+    #filter to 0.1% of data, uncomment for testing
     #data = data.sample(frac=0.001)
 
     corpus = []
